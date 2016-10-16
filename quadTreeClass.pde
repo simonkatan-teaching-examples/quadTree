@@ -1,7 +1,7 @@
 class QuadTree
 {
   // Arbitrary constant to indicate how many elements can be stored in this quad tree node
-  final int QT_NODE_CAPACITY = 4;
+  final int QT_NODE_CAPACITY = 1;
 
   // Axis-aligned bounding box stored as a center with half-dimensions
   // to represent the boundaries of this quad tree
@@ -9,15 +9,19 @@ class QuadTree
 
   // Points in this quad tree node
   ArrayList<PVector> points;
+  boolean ignore = false;
+  boolean visited = false;
 
   // Children
-  QuadTree northWest;
-  QuadTree northEast;
-  QuadTree southWest;
-  QuadTree southEast;
+  QuadTree northWest; //0
+  QuadTree northEast; //1
+  QuadTree southWest; //2
+  QuadTree southEast; //3
+  
+  QuadTree parent = null;
 
   // Methods
-  QuadTree(AABB _boundary) 
+  QuadTree(AABB _boundary, QuadTree _parent) 
   {
     boundary = _boundary;
 
@@ -25,6 +29,8 @@ class QuadTree
     northEast = null;
     southWest = null;
     southEast = null;
+    
+    parent = _parent;
 
     points = new ArrayList<PVector>();
   }
@@ -53,6 +59,22 @@ class QuadTree
     // Otherwise, the point cannot be inserted for some unknown reason (this should never happen)
     return false;
   }
+  
+  ArrayList <QuadTree> getChildren()
+  {
+    ArrayList<QuadTree> children = new ArrayList<QuadTree>();
+    
+    if (northWest != null)
+    {
+      children.add(northWest);
+      children.add(northEast);
+      children.add(southEast);
+      children.add(southWest);
+    }
+      
+    return children;
+    
+  }
 
   void subdivide() 
   {
@@ -61,29 +83,37 @@ class QuadTree
     PVector nwc = new PVector();
     nwc = boundary.center.copy().add(-h, -h);
     AABB nwb = new AABB(nwc, h);
-    northWest = new QuadTree(nwb);
+    northWest = new QuadTree(nwb, this);
 
     PVector nec = new PVector();
     nec = boundary.center.copy().add(h, -h);
     AABB neb = new AABB(nec, h);
-    northEast = new QuadTree(neb);
+    northEast = new QuadTree(neb, this);
 
     PVector sec = new PVector();
     sec = boundary.center.copy().add(h, h);
     AABB seb = new AABB(sec, h);
-    southEast = new QuadTree(seb);
+    southEast = new QuadTree(seb, this);
 
     PVector swc = new PVector();
     swc = boundary.center.copy().add(-h, h);
     AABB swb = new AABB(swc, h);
-    southWest = new QuadTree(swb);
+    southWest = new QuadTree(swb, this);
   } 
 
 
   void draw()
   {
-    stroke(100);
-    fill(0, 100, 0, 70);
+    fill(0, 100, 0, 70); 
+    if(!visited)
+    {
+      stroke(100);
+
+    }
+    else
+    {
+      stroke(255);
+    }
 
     boundary.draw();
 
@@ -152,5 +182,28 @@ class QuadTree
       return this;
     }
    
+  }
+  
+  
+
+
+  
+  PVector nearestPoint(PVector p)
+  {
+    PVector np = p;
+    
+    float minDist = boundary.hy; 
+    
+    for(int i = 0; i < points.size(); i++)
+    {
+      float d = p.dist(points.get(i));
+      if(d < minDist)
+      {
+        minDist = d;
+        np = points.get(i);
+      }
+    }
+    
+    return np;
   }
 }

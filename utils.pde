@@ -2,12 +2,14 @@ class AABB
 {
   PVector center;
   float halfDimension;
+  float hy;
 
   AABB(PVector _center, float _halfDimension)
   {
     center = new PVector();
     center = _center.copy();
     halfDimension = _halfDimension;
+    hy = sqrt(halfDimension * 4);
   }
   
   boolean containsPoint(PVector Point)
@@ -23,6 +25,14 @@ class AABB
       
     }
     return false;
+  }
+  
+  boolean isBottom(PVector Point){
+    return(Point.y >= center.y);
+  }
+  
+  boolean isRight(PVector Point){
+    return(Point.x >= center.x);
   }
   
   boolean intersectsAABB(AABB other) 
