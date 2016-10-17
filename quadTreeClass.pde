@@ -8,16 +8,12 @@ class QuadTree
   AABB boundary;
 
   // Points in this quad tree node
-  ArrayList<PVector> points;
+  ArrayList<Point> points;
   boolean ignore = false;
   boolean visited = false;
 
-  // Children
-  QuadTree northWest; //0
-  QuadTree northEast; //1
-  QuadTree southWest; //2
-  QuadTree southEast; //3
-  
+  QuadTree children [] = new QuadTree[4];
+
   QuadTree parent = null;
 
   // Methods
@@ -25,14 +21,14 @@ class QuadTree
   {
     boundary = _boundary;
 
-    northWest = null;
-    northEast = null;
-    southWest = null;
-    southEast = null;
-    
+    for (int i = 0; i < 4; i++)
+    {
+      children[i] = null;
+    }
+
     parent = _parent;
 
-    points = new ArrayList<PVector>();
+    points = new ArrayList<Point>();
   }
 
   boolean insert(PVector p) {
@@ -43,37 +39,28 @@ class QuadTree
     // If there is space in this quad tree, add the object here
     if (points.size() < QT_NODE_CAPACITY)
     {
-      points.add(p);
+      Point pt = new Point(p); 
+      points.add(pt);
       return true;
     }
 
     // Otherwise, subdivide and then add the point to whichever node will accept it
-    if (northWest == null)
+    if (children[0] == null)
       subdivide();
 
-    if (northWest.insert(p)) return true;
-    if (northEast.insert(p)) return true;
-    if (southWest.insert(p)) return true;
-    if (southEast.insert(p)) return true;
+
+    for (int i=0; i <4; i++)
+    {
+      if (children[i].insert(p)) return true;
+    }
 
     // Otherwise, the point cannot be inserted for some unknown reason (this should never happen)
     return false;
   }
-  
-  ArrayList <QuadTree> getChildren()
+
+  QuadTree[] getChildren()
   {
-    ArrayList<QuadTree> children = new ArrayList<QuadTree>();
-    
-    if (northWest != null)
-    {
-      children.add(northWest);
-      children.add(northEast);
-      children.add(southWest);
-      children.add(southEast);
-    }
-      
     return children;
-    
   }
 
   void subdivide() 
@@ -83,52 +70,53 @@ class QuadTree
     PVector nwc = new PVector();
     nwc = boundary.center.copy().add(-h, -h);
     AABB nwb = new AABB(nwc, h);
-    northWest = new QuadTree(nwb, this);
+    children[0] = new QuadTree(nwb, this);
 
     PVector nec = new PVector();
     nec = boundary.center.copy().add(h, -h);
     AABB neb = new AABB(nec, h);
-    northEast = new QuadTree(neb, this);
+    children[1]  = new QuadTree(neb, this);
+    
+    PVector swc = new PVector();
+    swc = boundary.center.copy().add(-h, h);
+    AABB swb = new AABB(swc, h);
+    children[2] = new QuadTree(swb, this);
 
     PVector sec = new PVector();
     sec = boundary.center.copy().add(h, h);
     AABB seb = new AABB(sec, h);
-    southEast = new QuadTree(seb, this);
+    children[3] = new QuadTree(seb, this);
 
-    PVector swc = new PVector();
-    swc = boundary.center.copy().add(-h, h);
-    AABB swb = new AABB(swc, h);
-    southWest = new QuadTree(swb, this);
+
   } 
 
 
   void draw()
   {
-    fill(0, 100, 0, 70); 
-    if(!visited)
+    
+    stroke(0);
+    
+    if (!ignore)
     {
-      stroke(100);
-
-    }
+      noFill(); 
+    } 
     else
     {
-      stroke(255);
+      fill(100);
     }
 
     boundary.draw();
 
-    fill(255);
-    noStroke();
     for (int i = 0; i < points.size(); i++)
     {
-      ellipse(points.get(i).x, points.get(i).y, 4, 4);
+      points.get(i).draw();
     }
 
-    if (northWest != null) {
-      northWest.draw();
-      northEast.draw();
-      southEast.draw();
-      southWest.draw();
+    if (children[0] != null) {
+      for(int i = 0; i < 4; i++)
+      {
+        children[i].draw();
+      }
     }
   }
 
@@ -144,66 +132,24 @@ class QuadTree
     // Check objects at this quad level
     for (int p = 0; p < points.size(); p++)
     {
-      if (range.containsPoint(points.get(p)))
+      if (range.containsPoint(points.get(p).pos))
       {
-        pointsInRange.add(points.get(p));
+        pointsInRange.add(points.get(p).pos);
       }
     }
 
     // Terminate here, if there are no children
-    if (northWest == null)
+    if (children[0] == null)
       return pointsInRange;
 
     // Otherwise, add the points from the children
-    pointsInRange.addAll(northWest.queryRange(range));
-    pointsInRange.addAll(northEast.queryRange(range));
-    pointsInRange.addAll(southWest.queryRange(range));
-    pointsInRange.addAll(southEast.queryRange(range));
+    for(int i = 0 ; i < 4; i++)
+    {
+      pointsInRange.addAll(children[i].queryRange(range));
+    }
 
     return pointsInRange;
   }
 
-  QuadTree lowestQuad(PVector p) {
 
-   //recurse to the lowest quadrant that contains this point
-   
-    if (northWest != null) {
-      if (northWest.boundary.containsPoint(p))
-        return northWest.lowestQuad(p);
-      else if (northEast.boundary.containsPoint(p))
-        return northEast.lowestQuad(p);
-      else if (southEast.boundary.containsPoint(p))
-        return southEast.lowestQuad(p);
-      else //it must be southwest
-        return southWest.lowestQuad(p);
-    } else {
-      //this is the deepest point 
-      
-      return this;
-    }
-   
-  }
-  
-  
-
-
-  
-  PVector nearestPoint(PVector p)
-  {
-    PVector np = p;
-    
-    float minDist = boundary.hy; 
-    
-    for(int i = 0; i < points.size(); i++)
-    {
-      float d = p.dist(points.get(i));
-      if(d < minDist)
-      {
-        minDist = d;
-        np = points.get(i);
-      }
-    }
-    
-    return np;
-  }
 }

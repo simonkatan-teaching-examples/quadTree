@@ -1,0 +1,88 @@
+https://gist.github.com/patricksurry/6478178
+https://ericandrewlewis.github.io/how-a-quadtree-works/
+k-nearest// http://bl.ocks.org/llb4ll/8709363
+
+answer this when done
+http://stackoverflow.com/questions/20837530/quadtree-nearest-neighbour-algorithm
+
+
+// a likely solution ...
+
+protected void getClosest(float x, float y, Closest closestInfo) {
+
+
+    if (hasQuads) {
+
+        // we have no starting point yet
+        // so get one
+        if (closestInfo.item == null) {
+            // check all 4 cause there could be a empty one
+            for (int i = 0; i < 4; i++) {
+                quads[i].getClosest(x, y, closestInfo);
+                if (closestInfo.item != null) {
+                    // now we have a starting point
+                    getClosest(x, y, closestInfo);
+                    return;
+                }
+
+            }
+        }
+        else {
+
+            // we have a item set as closest
+            // we should check if this quad is
+            // closer then the current closest distance
+            // let's start with the closest from index
+
+            int closestIndex = getIndex(x, y);
+
+            float d = quads[closestIndex].bounds.distToPointSQ(x, y);
+
+            if (d < closestInfo.dist) {
+                quads[closestIndex].getClosest(x, y, closestInfo);
+            }
+
+            // check the others
+            for (int i = 0; i < 4; i++) {
+                if (i == closestIndex) continue;
+
+                d = quads[i].bounds.distToPointSQ(x, y);
+
+                if (d < closestInfo.dist) {
+                    quads[i].getClosest(x, y, closestInfo);
+                }
+
+            }
+
+        }
+
+    }
+    else {
+
+        for (int i = 0; i < items.size(); i++) {
+
+            T item = items.get(i);
+
+            float dist = distSQ(x, y, getXY.x(item), getXY.y(item));
+
+            if (dist < closestInfo.dist) {
+                closestInfo.dist = dist;
+                closestInfo.item = item;
+                closestInfo.tree = this;
+            }
+
+        }
+    }
+
+}
+
+// . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+
+class Closest {
+
+    QuadTree<T> tree;
+    T item;
+    float dist = Float.MAX_VALUE;
+
+}

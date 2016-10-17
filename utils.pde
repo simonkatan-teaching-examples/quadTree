@@ -1,3 +1,30 @@
+class Point
+{
+  
+   PVector pos;
+   boolean scanned;
+   
+  Point(PVector _p)
+  {
+    pos = _p;
+    scanned = false;
+  }
+  
+  void draw(){
+    noStroke();
+   if(scanned)
+   {
+     fill(200,200,0);
+   }
+   else
+   {
+     fill(100);
+   }
+   ellipse(pos.x, pos.y, 4, 4);
+  }
+  
+}
+
 class AABB
 {
   PVector center;
@@ -27,12 +54,12 @@ class AABB
     return false;
   }
   
-  boolean isBottom(PVector Point){
-    return(Point.y >= center.y);
+  int isBottom(PVector Point){
+    return(Point.y >= center.y) ? 1 : 0;
   }
   
-  boolean isRight(PVector Point){
-    return(Point.x >= center.x);
+  int isRight(PVector Point){
+    return(Point.x >= center.x) ? 1 : 0;
   }
   
   boolean intersectsAABB(AABB other) 
