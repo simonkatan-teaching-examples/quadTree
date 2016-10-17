@@ -68,8 +68,8 @@ class QuadTree
     {
       children.add(northWest);
       children.add(northEast);
-      children.add(southEast);
       children.add(southWest);
+      children.add(southEast);
     }
       
     return children;

@@ -7,6 +7,7 @@ AABB search;
 AABB res;
 PVector np;
 float bestDistance;
+PVector mp;
 
 void setup() 
 {
@@ -20,7 +21,7 @@ void setup()
   }
   
   search = new AABB(new PVector(0,0),20);
-  
+  bestDistance = root.boundary.hy;
   
 }
 
@@ -52,12 +53,18 @@ void draw()
   
   if(currentNode != null)
   {
-  fill(255,0,0);
-  ellipse(currentNode.boundary.center.x, currentNode.boundary.center.y, 20,20);
+  fill(255,0,0,100);
+  rect(currentNode.boundary.center.x , 
+        currentNode.boundary.center.y,
+        currentNode.boundary.halfDimension * 2,
+        currentNode.boundary.halfDimension * 2);
   }
   
   fill(255,0,0);
-  if(np != null)ellipse(np.x, np.y ,5,5);
+  stroke(0,0,0);
+  if(np != null)ellipse(np.x, np.y ,10,10);
+  fill(0,0,0);
+  if(mp != null)ellipse(mp.x, mp.y ,5,5);
 }
 
 void mouseMoved(){
@@ -68,10 +75,14 @@ void mousePressed()
 {
     //search.center.set(mouseX, mouseY);
     //selected = root.queryRange(search);
-    PVector p = new PVector(mouseX,mouseY);
+    mp = new PVector(mouseX,mouseY);
     
-    visitNextNode(p);
+  
     
+}
+
+void keyPressed(){
+    visitNextNode(mp);
 }
 
 void selectNextNode(PVector p) {
@@ -89,24 +100,29 @@ void selectNextNode(PVector p) {
   // fall into to. then recurse on this child first.
   int rl = currentNode.boundary.isRight(p) ? 1 : 0;//right or left
   int bt = currentNode.boundary.isBottom(p) ? 1 : 0; // bottom or top
+  
+  println("/////////////");
+  println("isright", rl); //<>//
+  println("isbottom", bt);
 
   // If we're still interested in children...
   if ( ! currentNode.ignore && children.size() > 0 ) {
     // Select a child to drill down into with priority to the one that contains
     // the click. Don't visit if it's already been visited.
     if (children.get(bt*2+rl).points.size() > 0 && ! children.get(bt*2+rl).visited)  {
-      this.currentNode = children.get(bt*2+rl);
+      println("priority " + (bt*2+rl));
+      currentNode = children.get(bt*2+rl);
     } else if (children.get(bt*2+(1-rl)).points.size() > 0 && ! children.get(bt*2+(1-rl)).visited) {
-      this.currentNode = children.get(bt*2+(1-rl));
+      currentNode = children.get(bt*2+(1-rl));
     } else if (children.get((1-bt)*2+rl).points.size() > 0 && ! children.get((1-bt)*2+rl).visited) {
-      this.currentNode = children.get((1-bt)*2+rl);
+      currentNode = children.get((1-bt)*2+rl);
     } else if (children.get((1-bt)*2+(1-rl)).points.size() > 0 && ! children.get((1-bt)*2+(1-rl)).visited ) {
-      this.currentNode = children.get((1-bt)*2+(1-rl));
+      currentNode = children.get((1-bt)*2+(1-rl));
     } else {
       // If all children have been visited, we want to go to the next node,
       // or perhaps just set the current node up one in the tree and re-run this function.
-      this.currentNode = currentNode.parent;
-      this.selectNextNode(p);
+      currentNode = currentNode.parent;
+      selectNextNode(p);
       return;
     }
     
@@ -131,7 +147,7 @@ void visitNextNode(PVector p) {
   float y2 = node.boundary.center.y + node.boundary.halfDimension;
   node.visited = true;
   // exclude node if point is farther away than best distance in either axis
-  if (p.x < x1 - this.bestDistance || p.x > x2 + this.bestDistance || p.y < y1 - this.bestDistance || p.y > y2 + this.bestDistance) {
+  if (p.x < x1 - bestDistance || p.x > x2 + bestDistance || p.y < y1 - bestDistance || p.y > y2 + bestDistance) {
       node.ignore = true;
       println("ignore");
       return;
@@ -146,7 +162,8 @@ void visitNextNode(PVector p) {
     float distance = PVector.dist(pt, p);
     if (distance < bestDistance) {
       bestDistance = distance;
-      np = p; //<>//
+      np = pt; //<>//
+      println(np);
     }
   }
 
