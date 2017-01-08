@@ -11,6 +11,7 @@ class QuadTree
   ArrayList<Point> points;
   boolean ignore = false;
   boolean visited = false;
+  boolean isRoot = false;
 
   QuadTree children [] = new QuadTree[4];
 

@@ -5,23 +5,51 @@ QuadTree currentNode = null;
 ArrayList<PVector> selected = null;
 AABB search;
 AABB res;
-PVector np;
+PVector np; //nearest point
 float bestDistance;
-PVector mp;
+PVector mp; //selected point
+
+ArrayList <PVector> points;
 
 void setup() 
 {
   size(512, 512); 
   rectMode(CENTER);
   root = new QuadTree(new AABB(new PVector(width/2, height/2), width/2), null);
+  root.isRoot = true;
+  
+  points = new ArrayList <PVector>();
 
-  for (int i = 0; i < 1000; i ++)
+  for (int i = 0; i < 2000; i ++)
   {
-    root.insert(new PVector(random(width), random(height)));
+    PVector p = sample();
+    root.insert(p);
+    points.add(p.copy());
   }
 
   search = new AABB(new PVector(0, 0), 20);
   bestDistance = root.boundary.hy;
+  
+  resetNodes();
+}
+
+PVector sample() {
+  
+  PVector bestCandidate = new PVector(random(width), random(height)); 
+  float bd = 0;
+  
+  for (int i = 0; i < 10; ++i)
+  {
+    mp = new PVector(random(width), random(height));
+    findClosest();
+    if (bestDistance > bd) 
+    {
+      bd = bestDistance;
+      bestCandidate = mp.copy();
+    }
+  }
+  
+  return bestCandidate;
 }
 
 void draw() 
@@ -29,9 +57,15 @@ void draw()
 
   background(255);
 
-  root.draw();
+//  root.draw();
   fill(255, 0, 0);
   noStroke();
+
+  for(int i =0; i < points.size(); i++)
+  {
+    PVector p = points.get(i);
+    ellipse(p.x,p.y, 3,3); 
+  }
 
   //if(selected != null)
   //{
@@ -45,31 +79,31 @@ void draw()
   fill(0);
   text("fps: " + frameRate, 20, 20);
 
-  stroke(255);
-  fill(0, 0, 255, 50);
-  //search.draw();
-  //if(res != null)res.draw();
+  //stroke(255);
+  //fill(0, 0, 255, 50);
+  ////search.draw();
+  ////if(res != null)res.draw();
 
-  if (currentNode != null)
-  {
+  //if (currentNode != null)
+  //{
 
-    pushStyle();
-    stroke(255,0,0);
-    strokeWeight(4);
-    noFill();
-    rect(currentNode.boundary.center.x, 
-      currentNode.boundary.center.y, 
-      currentNode.boundary.halfDimension * 2, 
-      currentNode.boundary.halfDimension * 2);
+  //  pushStyle();
+  //  stroke(255,0,0);
+  //  strokeWeight(4);
+  //  noFill();
+  //  rect(currentNode.boundary.center.x, 
+  //    currentNode.boundary.center.y, 
+  //    currentNode.boundary.halfDimension * 2, 
+  //    currentNode.boundary.halfDimension * 2);
 
-    popStyle();
-  }
+  //  popStyle();
+  //}
 
-  fill(255, 0, 0);
-  stroke(0, 0, 0);
-  if (np != null)ellipse(np.x, np.y, 10, 10);
-  fill(0, 0, 0);
-  if (mp != null)ellipse(mp.x, mp.y, 5, 5);
+  //fill(255, 0, 0);
+  //stroke(0, 0, 0);
+  //if (np != null)ellipse(np.x, np.y, 10, 10);
+  //fill(0, 0, 0);
+  //if (mp != null)ellipse(mp.x, mp.y, 5, 5);
 }
 
 void mouseMoved() {
@@ -82,8 +116,57 @@ void mousePressed()
   mp = new PVector(mouseX, mouseY);
 }
 
-void keyPressed() {
+void keyPressed() 
+{
+  findClosest();
+}
+
+void findClosest()
+{
+ 
+  resetNodes();
+  bestDistance = root.boundary.hy;
+  currentNode = null;
   visitNextNode(mp);
+  
+  boolean isFound = false;
+  
+  while(!isFound)
+  {
+    visitNextNode(mp);
+    if(currentNode.isRoot)
+    {
+      isFound = true;
+    }
+  }
+  
+  
+}
+
+void resetNodes()
+{
+  if ( currentNode == null ) 
+  {
+    currentNode = root;
+  }
+
+  QuadTree children[] = currentNode.getChildren();
+  currentNode.ignore = false;
+  currentNode.visited = false;
+  
+  for(int i = 0; i < currentNode.points.size(); i++)
+  {
+     currentNode.points.get(i).scanned = false;
+  }
+  
+  if(children[0] != null)
+  {
+    for(int i = 0; i < 4; i++)
+    {
+      currentNode = children[i];
+      resetNodes();
+    }
+  }
 }
 
 void selectNextNode(PVector p) {
